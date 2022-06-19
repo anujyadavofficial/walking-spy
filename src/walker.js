@@ -55,6 +55,7 @@ var Context = {
   states: {},
   candidates: [],
   textWrappers: [],
+  editableWrappers: [],
   reasons: [],
   pnrContext: { texts: ["pnr", "ticket", "number"], type: "Pnr" },
   nameContext: { texts: ["email", "last", "name"], type: "Name" }
@@ -74,7 +75,7 @@ var Spy = {
   hasGivenUp: function () {
     return Context.reasons.length > 0;
   },
-  isTextInput: function (wrapper) {
+  markText: function (wrapper) {
     var others = [
       "button",
       "checkbox",
@@ -108,6 +109,14 @@ var Spy = {
     var textual =
       (tag.toLowerCase() === "input" || tag.toLowerCase() === "textarea") &&
       others.indexOf(type) === -1;
+    var enabled = ref.disabled === false && ref.readOnly === false;
+
+    if (textual) {
+      wrapper.textual = true;
+    }
+    if (enabled) {
+      wrapper.enabled = true;
+    }
   },
   pnrGuard: function (wrapper) {
     return !this.hasGivenUp() && !wrapper.forName && !wrapper.cannotSay;
@@ -166,6 +175,7 @@ var Spy = {
         ref: input,
         states: []
       };
+      this.classifyText(wrapper);
       Context.candidates.push(wrapper);
     });
 
@@ -240,8 +250,13 @@ var Spy = {
         }
       });
 
-      if (!wrappedCandidate.cannotSay && wrappedCandidate.isText) {
-        Context.textWrappers.push(wrappedCandidate);
+      // TODO: Filter
+      if (!wrappedCandidate.cannotSay) {
+        if (wrappedCandidate.textual && wrappedCandidate.enabled) {
+          Context.textWrappers.push(wrappedCandidate);
+        } else if (wrappedCandidate.enabled) {
+          Context.editableWrappers.push(wrappedCandidate);
+        }
       }
 
       console.log(Context);
@@ -282,7 +297,7 @@ var Walker = {
     console.log(message);
   },
   spy: function () {
-    return Spy.findCandidates();
+    return Spy.begin();
   }
 };
 

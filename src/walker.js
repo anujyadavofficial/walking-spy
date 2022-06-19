@@ -57,47 +57,57 @@ var Context = {
   textWrappers: [],
   reasons: [],
   pnrContext: { texts: ["pnr", "ticket", "number"], type: "Pnr" },
-  nameContext: { texts: ["email", "last", "name"], type: "Name" },
-  similar: function (texts, str) {
-    var present = false;
-    Array.from(texts).forEach(function (text) {
-      if (text.indexOf(str)) {
-        present = true;
-      }
-    });
-    return present;
-  },
-  verify: function (attr, matchFor, wrapper, state) {
-    var matchKey = matchFor.startsWith("data")
-      ? matchFor.replace(/-/g, "_") + "Match"
-      : matchFor + "Match";
-
-    if (this.similar(this.pnrContext.texts, attr.value)) {
-      if (wrapper.forName) {
-        wrapper.cannotSay = true;
-      }
-      wrapper[matchKey] = true;
-      wrapper.forPnr = true;
-      wrapper.states.push(state);
-    } else if (this.similar(this.nameContext.texts, attr.value)) {
-      if (wrapper.forPnr) {
-        wrapper.cannotSay = true;
-      }
-
-      wrapper[matchKey] = true;
-      wrapper.forName = true;
-      wrapper.states.push(state);
-    }
-    return wrapper;
-  },
-  isTextInput: function (element) {}
+  nameContext: { texts: ["email", "last", "name"], type: "Name" }
 };
 
 var Spy = {
-  candidates: [],
-  textInputs: [],
+  //candidates: [],
+  //textInputs: [],
+  addCandidate: function (candidate) {
+    var wrapper = {
+      ref: candidate
+    };
+
+    this.candidates.push(wrapper);
+    return wrapper;
+  },
   hasGivenUp: function () {
     return Context.reasons.length > 0;
+  },
+  isTextInput: function (wrapper) {
+    var others = [
+      "button",
+      "checkbox",
+      "color",
+      "date",
+      "datetime-local",
+      "file",
+      "hidden",
+      "image",
+      "month",
+      "number",
+      "password",
+      "radio",
+      "range",
+      "reset",
+      "search",
+      "submit",
+      "tel",
+      "time",
+      "url",
+      "week"
+    ];
+    var ref = wrapper.ref;
+
+    if (!ref.getAttribute) {
+      return false;
+    }
+    var tag = ref.tagName;
+    var type = ref.getAttribute("type");
+
+    var textual =
+      (tag.toLowerCase() === "input" || tag.toLowerCase() === "textarea") &&
+      others.indexOf(type) === -1;
   },
   pnrGuard: function (wrapper) {
     return !this.hasGivenUp() && !wrapper.forName && !wrapper.cannotSay;
@@ -126,82 +136,103 @@ var Spy = {
     });
     return present;
   },
-  verify: function (attr, matchFor, wrapper, state) {
+  verify: function (attr, matchFor, wrappedCandidate, state) {
     var matchKey = matchFor.startsWith("data")
       ? matchFor.replace(/-/g, "_") + "Match"
       : matchFor + "Match";
 
     if (this.similar(this.pnrContext.texts, attr.value)) {
-      if (this.pnrGuard(wrapper)) {
-        wrapper[matchKey] = true;
-        wrapper.forPnr = true;
-        wrapper.states.push(state);
+      if (this.pnrGuard(wrappedCandidate)) {
+        wrappedCandidate[matchKey] = true;
+        wrappedCandidate.forPnr = true;
+        wrappedCandidate.states.push(state);
       }
-      this.giveUp("Ambiguous classification.", wrapper);
+      this.giveUp("Ambiguous classification.", wrappedCandidate);
     } else if (this.similar(this.nameContext.texts, attr.value)) {
-      if (this.nameGuard(wrapper)) {
-        wrapper[matchKey] = true;
-        wrapper.forName = true;
-        wrapper.states.push(state);
+      if (this.nameGuard(wrappedCandidate)) {
+        wrappedCandidate[matchKey] = true;
+        wrappedCandidate.forName = true;
+        wrappedCandidate.states.push(state);
       }
-      this.giveUp("Ambiguous classification.", wrapper);
+      this.giveUp("Ambiguous classification.", wrappedCandidate);
     }
-    return wrapper;
+  },
+  prepareCandidates: function () {
+    var inputs = document.body.getElementsByTagName("input");
+    var editables = document.querySelectorAll("[contenteditable=true]");
+
+    Array.from(inputs).forEach(function (input) {
+      var wrapper = {
+        ref: input,
+        states: []
+      };
+      Context.candidates.push(wrapper);
+    });
+
+    Array.from(editables).forEach(function (editable) {
+      var wrapper = {
+        ref: editable,
+        states: [],
+        editable: true
+      };
+      Context.candidates.push(wrapper);
+    });
   },
   findCandidates: function () {
-    Context.candidates = document.body.getElementsByTagName("input");
+    this.prepareCandidates();
+
     if (!Context.candidates || Context.candidates.length === 0) {
       this.giveUp("Failed to find candidates");
     }
 
-    Array.from(Context.candidates).forEach(function (input, index) {
-      var attributes = input.getAttributeNames();
+    Array.from(Context.candidates).forEach(function (wrappedCandidate, index) {
+      wrappedCandidate.index = index;
+
+      var ref = wrappedCandidate.ref;
+      var attributes = ref.getAttributeNames();
       console.log(attributes);
 
-      var wrapper = { index: index, states: [] };
       Array.from(attributes).forEach(function (attr) {
-        var attribute = { name: attr, value: input.getAttribute(attr) };
+        var attribute = { name: attr, value: ref.getAttribute(attr) };
         switch (attribute.name) {
           case "type":
             if (attribute.value === "text") {
-              wrapper.isText = true;
+              wrappedCandidate.isText = true;
             }
             break;
           case "id":
-            wrapper = this.verify(attribute, "id", wrapper, Types.HelpingId);
+            this.verify(attribute, "id", wrappedCandidate, Types.HelpingId);
             break;
           case "name":
-            wrapper = this.verify(
-              attribute,
-              "name",
-              wrapper,
-              Types.HelpingName
-            );
+            this.verify(attribute, "name", wrappedCandidate, Types.HelpingName);
             break;
           case "class":
-            wrapper = this.verify(
+            this.verify(
               attribute,
               "class",
-              wrapper,
+              wrappedCandidate,
               Types.HelpingClass
             );
             break;
           case "maxlength":
             if (attribute.value > 5 && attribute.value <= 10) {
-              if (this.pnrGuard(wrapper)) {
-                wrapper.maxlengthMatch = true;
-                wrapper.forPnr = true;
-                wrapper.states.push(Types.HelpingMaxLengthForPnr);
+              if (this.pnrGuard(wrappedCandidate)) {
+                wrappedCandidate.maxlengthMatch = true;
+                wrappedCandidate.forPnr = true;
+                wrappedCandidate.states.push(Types.HelpingMaxLengthForPnr);
               }
-              this.giveUp("Unknown state. maxlength too small.", wrapper);
+              this.giveUp(
+                "Unknown state. maxlength too small.",
+                wrappedCandidate
+              );
             }
             break;
           default:
             if (attribute.name.startsWith("data")) {
-              wrapper = this.verify(
+              this.verify(
                 attribute,
                 attribute.name,
-                wrapper,
+                wrappedCandidate,
                 Types.HelpingDataAttr
               );
             }
@@ -209,8 +240,8 @@ var Spy = {
         }
       });
 
-      if (!wrapper.cannotSay && wrapper.isText) {
-        Context.textWrappers.push(wrapper);
+      if (!wrappedCandidate.cannotSay && wrappedCandidate.isText) {
+        Context.textWrappers.push(wrappedCandidate);
       }
 
       console.log(Context);

@@ -44,7 +44,6 @@ body {
   color: black;
   list-style-type: none;
   text-align: left;
-  background-color: rebeccapurple;
   padding: 5px;
   margin: 2px;
   margin-left: 0px;
@@ -53,4 +52,6 @@ body {
 .MenuItem {
   text-decoration: none;
   padding: 5px;
+  cursor: pointer;
+  color: dodgerblue;
 }

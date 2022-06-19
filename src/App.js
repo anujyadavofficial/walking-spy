@@ -75,7 +75,7 @@ export function Playground(props) {
   const { spec } = props;
   return (
     <div className="Playground">
-      <h4>{spec.title}</h4>
+      <h6>{spec.title}</h6>
       <div>{spec.description}</div>
       <Runner spec={spec} />
     </div>
@@ -97,7 +97,7 @@ export function Runner(props) {
 export function OnlyTwoInputs(props) {
   return (
     <div className="OnlyTwoInputs">
-      <input type="text" />
+      <input />
       <input type="text" />
     </div>
   );

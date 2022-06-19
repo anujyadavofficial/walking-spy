@@ -86,7 +86,7 @@ export function Runner(props) {
   const { spec } = props;
   switch (spec.index) {
     case 0:
-      return <OnlyTwoInputs {...props} />;
+      return <OnlyTwoInputsWithMaxLength {...props} />;
     case 1:
       return <ManyInputs {...props} />;
     default:
@@ -98,6 +98,15 @@ export function OnlyTwoInputs(props) {
   return (
     <div className="OnlyTwoInputs">
       <input />
+      <input type="text" />
+    </div>
+  );
+}
+
+export function OnlyTwoInputsWithMaxLength(props) {
+  return (
+    <div className="OnlyTwoInputsWithMaxLength">
+      <input type="text" maxLength="6" />
       <input type="text" />
     </div>
   );

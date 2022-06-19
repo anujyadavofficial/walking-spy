@@ -1,0 +1,56 @@
+body {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  background-color: lightgrey;
+}
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.Canvas {
+  display: flex;
+  flex-direction: row;
+}
+
+.Header {
+  padding: 5px;
+  background-color: rgb(30, 40, 85);
+  color: lightgrey;
+}
+
+.Playground {
+  width: 75%;
+  height: 100%;
+  margin: 5px;
+  padding: 5px;
+  padding-left: 0px;
+  border-radius: 5px;
+  background-color: whitesmoke;
+}
+
+.Menu {
+  width: 25%;
+  height: 100%;
+  margin: 5px;
+  padding: 5px;
+  border-radius: 5px;
+  background-color: whitesmoke;
+}
+
+.menu-container {
+  color: black;
+  list-style-type: none;
+  text-align: left;
+  background-color: rebeccapurple;
+  padding: 5px;
+  margin: 2px;
+  margin-left: 0px;
+}
+
+.MenuItem {
+  text-decoration: none;
+  padding: 5px;
+}

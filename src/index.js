@@ -14,4 +14,6 @@ root.render(
 );
 
 console.log(Walker.greet);
-Walker.greet("Walker It is");
+setTimeout(() => {
+  Walker.spy();
+}, 500);
